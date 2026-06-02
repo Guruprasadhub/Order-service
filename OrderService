@@ -1,0 +1,59 @@
+package com.example.demo.Service;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.example.demo.OrderDTO.OrderDTO;
+import com.example.demo.Repository.OrderRepository;
+import com.example.demo.entity.Order;
+import com.example.demo.feign.InventoryClient;
+
+@Service
+public class OrderService {
+	@Autowired
+	private OrderRepository repo;
+	@Autowired
+	private InventoryClient inventoryClient;
+	
+	public Order placeOrder(OrderDTO dto) {
+		
+		inventoryClient.reduceStock(dto.getDrugId(), dto.getQuantity());
+		
+		
+		Order order=new Order();
+		order.setDoctorId(dto.getDoctorId());
+		order.setDrugId(dto.getDrugId());
+		order.setQuantity(dto.getQuantity());
+		
+		order.setStatus("PLACED");
+		return repo.save(order);
+		
+	}
+	//get all
+	public List<Order> getAllOrders(){
+		return repo.findAll();
+	}
+	
+	//verify
+	public Order verifyOrder(Long id) {
+		Order order=repo.findById(id).orElseThrow(()->new RuntimeException("Order not found"));
+		order.setStatus("VERIFIED");
+		return repo.save(order);
+	}
+	
+	
+	//pick
+	public Order pickOrder(Long id) {
+		Order order=repo.findById(id).orElseThrow(()->new RuntimeException("Order not found"));
+		order.setStatus("PICKED");
+		return repo.save(order);
+	}
+	//sales report
+	public List<Order> salesReport(){
+		return repo.findAll().stream().filter(o->"PICKED".equals(o.getStatus())).toList();
+	} 
+	
+
+}
