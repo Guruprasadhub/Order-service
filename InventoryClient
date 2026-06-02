@@ -1,0 +1,20 @@
+package com.example.demo.feign;
+
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+
+import com.example.demo.OrderDTO.OrderDTO;
+
+
+@FeignClient(name="SUPPLIER-INVENTORY-SERVICE")
+public interface InventoryClient {
+	
+	@GetMapping("/inventory/drugs/{id}")
+	OrderDTO getDrug(@PathVariable("id") Long id);
+	
+	@PutMapping("/inventory/drug/reduce/{id}/{qty}")
+	Object reduceStock(@PathVariable("id") Long id, @PathVariable("qty") int qty);
+
+}
