@@ -1,0 +1,119 @@
+package com.example.demo.Controller;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.lang.reflect.Field;
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import com.example.demo.OrderDTO.OrderDTO;
+import com.example.demo.Service.OrderService;
+import com.example.demo.entity.Order;
+
+class OrderControllerTest {
+
+    private MockMvc mockMvc;
+
+    @BeforeEach
+    void setUp() throws Exception {
+
+        OrderService fakeService = new OrderService() {
+
+            @Override
+            public Order placeOrder(OrderDTO dto) {
+                Order order = new Order();
+                order.setId(1L);
+                return order;
+            }
+
+            @Override
+            public List<Order> getAllOrders() {
+                return List.of(new Order());
+            }
+
+            @Override
+            public Order verifyOrder(Long id) {
+                Order order = new Order();
+                order.setId(id);
+                return order;
+            }
+
+            @Override
+            public Order pickOrder(Long id) {
+                Order order = new Order();
+                order.setId(id);
+                return order;
+            }
+
+            @Override
+            public List<Order> salesReport() {
+                return List.of(new Order(), new Order());
+            }
+        };
+        OrderController controller = new OrderController();
+
+        Field field = OrderController.class.getDeclaredField("service");
+        field.setAccessible(true);
+        field.set(controller, fakeService);
+
+        mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .build();
+    }
+
+    @Test
+    void placeOrder_success() throws Exception {
+
+        String json = """
+            {
+              "productId": 1,
+              "quantity": 2
+            }
+            """;
+
+        mockMvc.perform(post("/orders")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json))
+                .andExpect(status().isOk());
+    }
+
+    // GET ALL ORDERS
+    @Test
+    void getAllOrders_success() throws Exception {
+
+        mockMvc.perform(get("/orders"))
+                .andExpect(status().isOk());
+    }
+
+    //  VERIFY ORDER
+    @Test
+    void verifyOrder_success() throws Exception {
+
+        mockMvc.perform(put("/orders/verify/1"))
+                .andExpect(status().isOk());
+    }
+
+    // PICK ORDER
+    @Test
+    void pickOrder_success() throws Exception {
+
+        mockMvc.perform(put("/orders/pick/1"))
+                .andExpect(status().isOk());
+    }
+
+    // SALES REPORT
+    @Test
+    void salesReport_success() throws Exception {
+
+        mockMvc.perform(get("/orders/sales"))
+                .andExpect(status().isOk());
+    }
+}
