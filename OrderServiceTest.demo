@@ -1,0 +1,129 @@
+package com.example.demo;
+
+
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+
+import java.util.List;
+import java.util.Optional;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.example.demo.OrderDTO.OrderDTO;
+import com.example.demo.Repository.OrderRepository;
+import com.example.demo.Service.OrderService;
+import com.example.demo.entity.Order;
+import com.example.demo.feign.InventoryClient;
+
+@ExtendWith(MockitoExtension.class)
+class OrderServiceTest {
+
+    @Mock
+    private OrderRepository repo;
+
+    @Mock
+    private InventoryClient inventoryClient;
+
+    @InjectMocks
+    private OrderService service;
+
+    // ✅ PLACE ORDER SUCCESS
+    @Test
+    void placeOrder_success() {
+
+        OrderDTO dto = new OrderDTO();
+        dto.setDoctorId(1L);
+        dto.setDrugId(10L);
+        dto.setQuantity(5);
+
+        when(inventoryClient.reduceStock(10L, 5))
+                .thenReturn(null);
+
+        when(repo.save(any(Order.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        Order result = service.placeOrder(dto);
+
+        assertNotNull(result);
+        assertEquals("PLACED", result.getStatus());
+        assertEquals(5, result.getQuantity());
+        verify(inventoryClient).reduceStock(10L, 5);
+    }
+
+    // ✅ GET ALL ORDERS
+    @Test
+    void getAllOrders_success() {
+
+        Order order = new Order();
+        order.setStatus("PLACED");
+
+        when(repo.findAll())
+                .thenReturn(List.of(order));
+
+        List<Order> orders = service.getAllOrders();
+
+        assertEquals(1, orders.size());
+    }
+
+    // ✅ VERIFY ORDER
+    @Test
+    void verifyOrder_success() {
+
+        Order order = new Order();
+        order.setId(1L);
+        order.setStatus("PLACED");
+
+        when(repo.findById(1L))
+                .thenReturn(Optional.of(order));
+
+        when(repo.save(any(Order.class)))
+                .thenReturn(order);
+
+        Order result = service.verifyOrder(1L);
+
+        assertEquals("VERIFIED", result.getStatus());
+    }
+
+    // ✅ PICK ORDER
+    @Test
+    void pickOrder_success() {
+
+        Order order = new Order();
+        order.setId(1L);
+        order.setStatus("VERIFIED");
+
+        when(repo.findById(1L))
+                .thenReturn(Optional.of(order));
+
+        when(repo.save(any(Order.class)))
+                .thenReturn(order);
+
+        Order result = service.pickOrder(1L);
+
+        assertEquals("PICKED", result.getStatus());
+    }
+
+    // ✅ SALES REPORT
+    @Test
+    void salesReport_success() {
+
+        Order picked = new Order();
+        picked.setStatus("PICKED");
+
+        Order placed = new Order();
+        placed.setStatus("PLACED");
+
+        when(repo.findAll())
+                .thenReturn(List.of(picked, placed));
+
+        List<Order> result = service.salesReport();
+
+        assertEquals(1, result.size());
+        assertEquals("PICKED", result.get(0).getStatus());
+    }
+}
